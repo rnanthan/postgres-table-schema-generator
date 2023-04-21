@@ -18,36 +18,37 @@ _Use the CloudFormation template to create SSM parameters, S3, and IAM roles. Yo
 
 Set the following environment variable.
 
-export AWS_PROFILE=<AWS Profile> ## Make sure to create an AWS profile with the right aws_access_key_id and aws_secret_access_key
-export ENV=local ## set to local if you are running the script locally. 
+    export AWS_PROFILE=<AWS Profile> ## Make sure to create an AWS profile with the right aws_access_key_id and aws_secret_access_key
+    export ENV=local ## set to local if you are running the script locally. 
 
 Install Python libs
 
-pip3 install -r requirements.txt
+    pip3 install -r requirements.txt
 
 Run the schema generator script. You have to provide the CSV filename in the S3 bucket and the table name as an argument. The schema name is optional and if it is not provided, the table will be created under the default schema, public.
 
-python3 table_schema_generator.py <CSV filename in S3> <table_name> -s <schema_name>
+    python3 table_schema_generator.py <CSV filename in S3> <table_name> -s <schema_name>
 
 This script will generate SQL for creating a table. The script will find the best datatype, text length, and primary key based on the data.
 
 The generated output will be stored ./output location and feel free to edit if you want to change anything.
 
-Optionally, it enables you to create the table and requires argument --create_table yes or -c yes.
+Optionally, it enables you to create the table and requires argument _--create_table yes or -c yes_.
 
 **3. Run Create Table Script**
 
 Run the create table script as follows. It will create the table in PostgreSQL database.
 
-python3 create_table.py 
+    python3 create_table.py
 
 **4. Copy the CSV data in S3 to the table created in PostgreSQL database.**
 
 You can use the following command to copy the data. CloudFormation template creates IAM role and you can get the PostgresCopyRole ANR from CloudFormation stack output.
 
-COPY <schema_name>.<table_name> from
-'s3://<s3 bucket name>/<object key>'
-iam_role <PostgresCopyRole ARN>
-IGNOREHEADER 1
-CSV;
+    COPY <schema_name>.<table_name> from
+    's3://<s3 bucket name>/<object key>'
+    iam_role <RedshiftCopyRole ARN>
+    IGNOREHEADER 1
+    CSV;
+
 
