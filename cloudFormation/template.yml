@@ -1,0 +1,159 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'This stack SSM parameters needed to run postgres-table-schema-generator.'
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+    - Label:
+        default: 'Postgres Connection Parameters'
+      Parameters:
+        - PostgresDbHost
+        - PostgresDbUser
+        - PostgresDbPassword
+        - PostgresDbName
+    - Label:
+        default: 'S3 bucket details'
+      Parameters:
+        - InputBucketName
+    NoEcho: true
+    Description: Service now adapter oauth2 client id value.
+    MinLength: 1
+Parameters:
+  PostgresDbHost:
+    Description: 'Postgres DB Host.'
+    Type: String
+    MinLength: 1
+  PostgresDbUser:
+    Description: 'Postgres DB User.'
+    Type: String
+    MinLength: 1
+  PostgresDbPassword:
+    Description: 'Postgres DB Password.'
+    Type: String
+    MinLength: 1
+    NoEcho: true
+  PostgresDbName:
+    Description: 'Postgres DB Name.'
+    Type: String
+    MinLength: 1
+  InputBucketName:
+    Description: 'Bucket Name.'
+    Type: String
+    MinLength: 1
+
+Resources:
+  ParameterPostgresDbHost:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/postgres-table-schema-generator/postgres.dbHost'
+      Type: String
+      Value: !Ref PostgresDbHost
+      Tags:
+        "Type": "Postgres Connection Parameter"
+  ParameterPostgresDbUser:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/postgres-table-schema-generator/postgres.dbUser'
+      Type: String
+      Value: !Ref PostgresDbUser
+      Tags:
+        "Type": "Postgres Connection Parameter"
+  ParameterPostgresDbPassword:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/postgres-table-schema-generator/postgres.dbPassword'
+      Type: String
+      Value: !Ref PostgresDbPassword
+      Tags:
+        "Type": "Postgres Connection Parameter"
+  ParameterPostgresDbName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/postgres-table-schema-generator/postgres.dbName'
+      Type: String
+      Value: !Ref PostgresDbName
+      Tags:
+        "Type": "Postgres Connection Parameter"
+  ParameterInputBucketName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/postgres-table-schema-generator/input.bucket.name'
+      Type: String
+      Value: !Ref InputBucketName
+      Tags:
+        "Type": "S3 Bucket Details."
+
+  S3Bucket:
+    DeletionPolicy: Retain
+    Type: 'AWS::S3::Bucket'
+    Description: Creating Amazon S3 bucket.
+    Properties:
+      BucketName: !Ref InputBucketName
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+
+  PostgresCopyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: postgres-copy-role
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'rds.amazonaws.com'
+                - 's3.amazonaws.com'
+            Action: [ 'sts:AssumeRole' ]
+      Path: /
+      Policies:
+        - PolicyName: postgres-copy-policy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:ListAllMyBuckets'
+                Resource:
+                  - 'arn:aws:s3:::*'
+              - Effect: Allow
+                Action:
+                  - 's3:ListBucket'
+                  - 's3:GetBucketLocation'
+                Resource:
+                  - !Sub 'arn:aws:s3:::${InputBucketName}'
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                Resource:
+                  - !Sub 'arn:aws:s3:::${InputBucketName}/*'
+              - Effect: Allow
+                Action:
+                  - 'kms:Decrypt'
+                Resource:
+                  - !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*'
+
+Outputs:
+  StackName:
+    Description: 'Stack name.'
+    Value: !Sub '${AWS::StackName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-stackname'
+  S3Bucket:
+    Description: Input Bucket ARN.
+    Value: !GetAtt S3Bucket.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-S3BucketARN'
+  PostgresCopyRole:
+    Description: Postgres Copy Role ARN.
+    Value: !GetAtt PostgresCopyRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-PostgresCopyRoleARN'
