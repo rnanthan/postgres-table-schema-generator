@@ -4,7 +4,8 @@ PostgreSQL is one of the most powerful open-source relational databases and is w
 
 Amazon RDS for PostgreSQL is used as a centralised repository for the business intelligence system that stores data from different sources in a unified schema and structure to create a single source of truth. We often get CSV extracts from third-party systems and stored them in the S3 data lake and then copied to PostgreSQL Database using COPY command. Before copying, we must create tables in PostgreSQL database to load CSV data. This utility, Postgres Table Schema Generator, allows you to generate the table schema. You can automate the table creation in PostgreSQL using this tool.
 
-![](/Users/nanthan/Downloads/Untitled-Page-10.jpg)
+![Untitled-Page-10](https://user-images.githubusercontent.com/4962048/233522761-df0a2746-ffe2-44ee-81d8-58c950300700.jpg)
+
 
 **1. Upload CSVs**
 
